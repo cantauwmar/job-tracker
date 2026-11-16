@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Werkstudent Job-Tracker | Robin Cantauw Martínez</title>
+  <style>
+    /* Minimales, modernes Dark-Theme */
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --accent: #10b981;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
+    
+    /* KPI Karten */
+    .kpi-grid { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .kpi-card { background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid var(--border); flex: 1; }
+    .kpi-val { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+    .kpi-label { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Layout: Tabelle links, Formular rechts */
+    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .card { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); }
+    
+    /* Tabelle */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Formular */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+    input, select, textarea {
+      width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 6px;
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    }
+    button {
+      width: 100%; padding: 0.6rem; border-radius: 6px; background: var(--primary);
+      border: none; color: #000; font-weight: bold; cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .delete-form { margin: 0; }
+    .delete-button {
+      width: auto; padding: 0.35rem 0.65rem; background: transparent;
+      border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem;
+    }
+    .delete-button:hover { background: #7f1d1d; color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 1. KOPFZEILE -->
+    <div class="header">
+      <div>
+        <h1>Werkstudent Job-Tracker</h1>
+        <p style="color: var(--text-muted)"></p>
+      </div>
+      <div>
+        <a href="/redoc" target="_blank" style="color: var(--primary); text-decoration: none;">📖 API Doku (ReDoc)</a>
+      </div>
+    </div>
+
+    <!-- 2. KPI KARTEN -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-val">{{ stats.total }}</div>
+        <div class="kpi-label">Gesamt Erfasst</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val">{{ stats.applied }}</div>
+        <div class="kpi-label">Aktiv Beworben</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" style="color: var(--accent);">{{ stats.avg_wage }}</div>
+        <div class="kpi-label">Ø Stundenlohn</div>
+      </div>
+    </div>
+
+    <!-- 3. HAUPTBEREICH -->
+    <div class="content-grid">
+      <!-- LINKE SEITE: DIE TABELLE -->
+      <div class="card">
+        <h2>Deine Bewerbungen</h2>
+        {% if applications|length == 0 %}
+          <p style="color: var(--text-muted); padding: 2rem 0; text-align: center;">
+            Noch keine Stellen eingetragen. Trage rechts deine erste Stelle ein!
+          </p>
+        {% else %}
+          <table>
+            <thead>
+              <tr>
+                <th>Unternehmen</th>
+                <th>Rolle & Typ</th>
+                <th>Konditionen</th>
+                <th>Status</th>
+                <th>Löschen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in applications %}
+                <tr>
+                  <td>
+                    <strong>{{ app.company }}</strong><br>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">
+                      📍 {{ app.location or 'Kein Ort' }} 
+                      {% if app.distance %}· ⏱️ {{ app.distance }}{% endif %}
+                    </span>
+                    {% if app.job_url %}
+                      · <a href="{{ app.job_url }}" target="_blank" style="font-size: 0.8rem; color: var(--primary);">Link</a>
+                    {% endif %}
+                
+                    <!-- AUFKLAPPBARER BEREICH ZUM NACHPFLEGEN (DETAILS) -->
+                    <details style="margin-top: 0.5rem; font-size: 0.85rem;">
+                      <summary style="cursor: pointer; color: var(--primary);">bearbeiten</summary>
+                      <form action="/applications/{{ app.id }}/edit" method="POST" style="margin-top: 0.5rem; background: var(--bg); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                          <div>
+                            <label style="font-size: 0.75rem;">Standort</label>
+                            <input type="text" name="location" value="{{ app.location or '' }}" placeholder="z.B. Mitte">
+                          </div>
+                          <div>
+                            <label style="font-size: 0.75rem;">Fahrzeit (ab Steglitz)</label>
+                            <input type="text" name="distance" value="{{ app.distance or '' }}" placeholder="z.B. 25 Min S-Bahn">
+                          </div>
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                          <label style="font-size: 0.75rem;">Ansprechpartner / Kontakt</label>
+                          <input type="text" name="contact" value="{{ app.contact or '' }}" placeholder="z.B. Frau Müller (HR)">
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                          <label style="font-size: 0.75rem;">Link zum Inserat</label>
+                          <input type="url" name="job_url" value="{{ app.job_url or '' }}" placeholder="https://...">
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                          <label style="font-size: 0.75rem;">Notizen / Tech-Stack</label>
+                          <textarea name="notes" rows="2" placeholder="z.B. Vorstellungsgespräch am Freitag...">{{ app.notes or '' }}</textarea>
+                        </div>
+                        <button type="submit" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; width: auto;">Speichern</button>
+                      </form>
+                    </details>
+                  </td>
+
+                  <td>
+                    {{ app.position }}<br>
+                    <span style="font-size: 0.75rem; color: var(--primary);">{{ app.job_type.value }}</span>
+                  </td>
+
+                  <td>
+                    {{ app.hourly_wage or '–' }} €/h<br>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ app.hours_per_week or '–' }} h/W</span>
+                  </td>
+                  <!--Status-->
+                  <td>
+                    <form action="/applications/{{ app.id }}/update-status" method="POST">
+                      <select name="new_status" onchange="this.form.submit()" style="padding: 0.3rem; font-size: 0.8rem; width: auto; border-radius: 4px;">
+                        {% for s in statuses %}
+                          <option value="{{ s }}" {% if app.status.value == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                      </select>
+                    </form>
+                  </td>
+                  <!--Delete-->
+                  <td>
+                    <form class="delete-form" action="/applications/{{ app.id }}/delete" method="POST" onsubmit="return confirm('Bewerbung wirklich löschen?');">
+                      <button class="delete-button" type="submit" aria-label="Bewerbung löschen" title="Bewerbung löschen">×</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+
+      <!-- RECHTE SEITE: DAS FORMULAR -->
+      <div class="card">
+        <h2>+ Neue Stelle</h2>
+        <form action="/applications/add" method="POST">
+          <div class="form-group">
+            <label>Unternehmen *</label>
+            <input type="text" name="company" placeholder="z.B. SAP, Berlin Hyp" required>
+          </div>
+          <div class="form-group">
+            <label>Position *</label>
+            <input type="text" name="position" placeholder="z.B. Werkstudent Python" required>
+          </div>
+          <div class="form-group">
+            <label>Job-Typ</label>
+            <select name="job_type">
+              {% for t in job_types %}
+                <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Stundenlohn (€/h)</label>
+            <input type="number" step="0.5" name="hourly_wage" placeholder="z.B. 18.50">
+          </div>
+          <div class="form-group">
+            <label>Wochenstunden</label>
+            <input type="number" step="0.5" name="hours_per_week" placeholder="z.B. 15">
+          </div>
+          <div class="form-group">
+            <label>Standort / Bezirk</label>
+            <input type="text" name="location" placeholder="z.B. Steglitz, Mitte, Remote">
+          </div>
+          <button type="submit">+ Zur Pipeline hinzufügen</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
