@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "name": "Stellenwerk Berlin (TU / Hochschulen)",
+      "feed_url": "https://www.stellenwerk.de/berlin/jobs/rss",
+      "category": "Hochschulen & Werkstudenten",
+      "parser_type": "rss"
+    },
+    {
+      "name": "HackerNews Remote & Tech Jobs",
+      "feed_url": "https://news.ycombinator.com/jobsrss",
+      "category": "IT / Software",
+      "parser_type": "rss"
+    },
+    {
+      "name": "Remotive Developer & Tech Jobs",
+      "feed_url": "https://remotive.com/job/rss",
+      "category": "Software & Data (Remote)",
+      "parser_type": "rss"
+    },
+    {
+      "name": "We Work Remotely - Programming & DevOps",
+      "feed_url": "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+      "category": "IT / Backend & Web",
+      "parser_type": "rss"
+    }
+  ]
+}
