@@ -1,6 +1,6 @@
 # Werkstudent Job & Application Tracker
 
-Ein schlanker Fullstack-Tracker für deine Bewerbungsoffensive (Werkstudent IT & Non-IT in Berlin).
+Ein schlanker Fullstack-Tracker für deine Bewerbungsoffensive (aktuelle config: Werkstudent IT & Non-IT in Berlin).
 
 ## Projektstruktur
 - `database.py`: SQLAlchemy-Engine, Session-Management und Datenmodelle
